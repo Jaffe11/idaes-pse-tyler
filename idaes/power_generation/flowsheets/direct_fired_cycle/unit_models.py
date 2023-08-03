@@ -117,6 +117,15 @@ class DFCDesignData(SkeletonUnitModelData):
             expr=self.capacity * (_ng_flow / _dfc_capacity),
             doc="Computes the natural flowrate required [in kg/s] at full load",
         )
+        self.capacity_ub = Expression(
+            expr=self.config.capacity_range[1],
+            doc="Upper bound on the capacity of the dfc",
+        )
+
+        self.capacity_lb = Expression(
+            expr=self.config.capacity_range[0],
+            doc="Upper bound on the capacity of the dfc",
+        )
 
         self.o2_flow = Expression(
             expr=_o2_ng_ratio * self.ng_flow,
@@ -301,6 +310,11 @@ class MonoASUDesignData(SkeletonUnitModelData):
         self.max_power = Expression(
             expr=self.max_o2_flow * (_power_req / _asu_capacity),
             doc="Power requirement at maximum capacity [in MW]",
+        )
+
+        self.max_power_ub = Expression(
+            expr=self.config.o2_flow_range[1]* (_power_req / _asu_capacity),
+            doc="Upper bound for the power requirement at maximum capacity [in MW]",
         )
 
         # Assuming that the capex of the ASU varies linearly with size
