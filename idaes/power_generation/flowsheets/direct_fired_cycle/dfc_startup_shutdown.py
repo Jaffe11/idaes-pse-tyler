@@ -85,6 +85,9 @@ def dfc_startup_shutdown_constraints(m):
         return pb.period[t].fs.dfc.startup <= pb.period[t + 3].fs.dfc.op_mode
 
     # Ensure that the power output is P_min at t + 2
+    # older model
+    #  pb.period[t + 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
+     # (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity * (1 - pb.period[t].fs.dfc.startup)
     @m.Constraint(set_period)
     def startup_con_4(blk, t):
         if t + 2 > num_time_periods:
@@ -94,8 +97,21 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t + 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
-            (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity * (1 - pb.period[t].fs.dfc.startup)
+            pb.period[t + 2].fs.dfc.power <= des_mdl.dfc_design.capacity + (DFC_OFFLOAD - 1) 
+            * des_mdl.dfc_design.capacity_ub * pb.period[t].fs.dfc.startup
+        )
+    
+    @m.Constraint(set_period)
+    def startup_con_4_1(blk, t):
+        if t + 2 > num_time_periods:
+          return Constraint.Skip
+
+        des_mdl = pb.parent_block()
+
+        return (
+            pb.period[t + 2].fs.dfc.power <= (des_mdl.dfc_design.capacity * DFC_OFFLOAD 
+            - des_mdl.dfc_design.capacity_lb + des_mdl.dfc_design.capacity_lb * 
+            pb.period[t].fs.dfc.startup)/(DFC_OFFLOAD -1)
         )
 
     # Fuel requirement during the first hour of the startup
@@ -159,6 +175,10 @@ def dfc_startup_shutdown_constraints(m):
         )
 
     # Ensure that the power output is P_min at t - 2
+    # older model:
+    # pb.period[t - 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
+    # (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity * (1 - pb.period[t].fs.dfc.shutdown)
+    
     @m.Constraint(set_period)
     def shutdown_con_4(blk, t):
         if t <= 2:
@@ -167,11 +187,26 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t - 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
-            (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity * (1 - pb.period[t].fs.dfc.shutdown)
+            pb.period[t - 2].fs.dfc.power <= des_mdl.dfc_design.capacity + (DFC_OFFLOAD - 1) 
+            * des_mdl.dfc_design.capacity_ub * pb.period[t].fs.dfc.shutdown
+        )
+    @m.Constraint(set_period)
+    def shutdown_con_4_1(blk, t):
+        if t <= 2:
+          return Constraint.Skip
+
+        des_mdl = pb.parent_block()
+
+        return (
+            pb.period[t - 2].fs.dfc.power <= (des_mdl.dfc_design.capacity * DFC_OFFLOAD 
+            - des_mdl.dfc_design.capacity_lb + des_mdl.dfc_design.capacity_lb * 
+            pb.period[t].fs.dfc.shutdown)/(DFC_OFFLOAD -1)
         )
 
     # Ensure that the power output is P_min at t - 1
+    # Older Model:
+    # pb.period[t - 1].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
+    # (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity * (1 - pb.period[t].fs.dfc.shutdown)
     @m.Constraint(set_period)
     def shutdown_con_5(blk, t):
         if t <= 1:
@@ -180,8 +215,22 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t - 1].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
-            (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity * (1 - pb.period[t].fs.dfc.shutdown)
+            pb.period[t - 1].fs.dfc.power <= des_mdl.dfc_design.capacity + (DFC_OFFLOAD - 1) 
+            * des_mdl.dfc_design.capacity_ub * pb.period[t].fs.dfc.shutdown
+        )
+    
+
+    @m.Constraint(set_period)
+    def shutdown_con_5_1(blk, t):
+        if t <= 1:
+          return Constraint.Skip
+
+        des_mdl = pb.parent_block()
+
+        return (
+            pb.period[t - 1].fs.dfc.power <= (des_mdl.dfc_design.capacity * DFC_OFFLOAD 
+            - des_mdl.dfc_design.capacity_lb + des_mdl.dfc_design.capacity_lb * 
+            pb.period[t].fs.dfc.shutdown)/(DFC_OFFLOAD -1)
         )
 
     # When shutdown is initiated, the fuel flowrate is ramped down from 10.889 to 5.8515
