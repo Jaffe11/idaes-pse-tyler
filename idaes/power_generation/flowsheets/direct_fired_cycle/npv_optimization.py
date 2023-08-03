@@ -248,12 +248,12 @@ def npv_model_dfc_asu(
 
     # Use Gurobi solver
     if solver is None:
-        solver = SolverFactory("gurobi")
-        solver.options['MIPGap'] = 0.01
-        solver.options['TimeLimit'] = 7500
-        solver.options['OutputFlag'] = 1
+        solver = SolverFactory("gams")
+        # solver.options['MIPGap'] = 0.01
+        # solver.options['TimeLimit'] = 7500
+        # solver.options['OutputFlag'] = 1
 
-    sol = solver.solve(m, tee=True)
+    sol = solver.solve(m, solver = "cplex", tee=True)
 
     _filename = folder + dataset + "_" + location + "_" + str(carbon_tax)
     _write_results(m, sol, filename=_filename)
