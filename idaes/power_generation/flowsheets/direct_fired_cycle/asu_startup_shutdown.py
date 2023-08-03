@@ -58,6 +58,10 @@ def asu_startup_shutdown_constraints(m):
             pb.period[t + i].fs.asu.shutdown <= 1 - pb.period[t].fs.asu.startup
         )
 
+    
+    # older model:
+    # pb.period[t + i].fs.asu.su_sd_power >= 
+    # 0.8 * des_mdl.asu_design.max_power * pb.period[t].fs.asu.startup
     @m.Constraint(set_period, [j for j in range(SU_TIME)])
     def startup_con_2(blk, t, i):
         if t + i > num_time_periods:
@@ -65,8 +69,8 @@ def asu_startup_shutdown_constraints(m):
 
         des_mdl = pb.parent_block()
         return (
-            pb.period[t + i].fs.asu.su_sd_power >= 
-            0.8 * des_mdl.asu_design.max_power * pb.period[t].fs.asu.startup
+            pb.period[t + i].fs.asu.su_sd_power >= 0.8 * des_mdl.asu_design.max_power
+            - 0.8 * des_mdl.asu_design.max_power_ub * (1-pb.period[t].fs.asu.startup)
         )
 
     # ASU must operate at the ninth hour after startup is initiated
@@ -95,14 +99,16 @@ def asu_startup_shutdown_constraints(m):
         return pb.period[t].fs.asu.shutdown <= pb.period[t - 1].fs.asu.op_mode
 
     # During the shutdown, power consumption is 50% of the P_max and O2 is not produced
+    # older Model:
+    # pb.period[t].fs.asu.su_sd_power >= 
+    # 0.5 *  des_mdl.asu_design.max_power * pb.period[t].fs.asu.shutdown
     @m.Constraint(set_period)
     def shutdown_con_2(blk, t):
         des_mdl = pb.parent_block()
         return (
-            pb.period[t].fs.asu.su_sd_power >= 
-            0.5 *  des_mdl.asu_design.max_power * pb.period[t].fs.asu.shutdown
+            pb.period[t].fs.asu.su_sd_power >= 0.5 * des_mdl.asu_design.max_power 
+            - 0.5 *  des_mdl.asu_design.max_power_ub * (1-pb.period[t].fs.asu.shutdown)
         )
-
     # If op_mode[t] = 1, and op_mode[t + 1] = 0, then shutdown must be initated at t + 1
     @m.Constraint(set_period)
     def shutdown_con_3(blk, t):
