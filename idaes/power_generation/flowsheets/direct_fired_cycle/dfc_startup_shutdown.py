@@ -88,6 +88,13 @@ def dfc_startup_shutdown_constraints(m):
     # older model
     #  pb.period[t + 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
      # (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity * (1 - pb.period[t].fs.dfc.startup)
+    """
+    pb.period[t + 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
+    (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity 
+
+    pb.period[t + 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <=
+    (1 - DFC_OFFLOAD) * des_mdl.dfc_design.capacity.ub * (1 - pb.period[t].fs.dfc.startup)
+    """
     @m.Constraint(set_period)
     def startup_con_4(blk, t):
         if t + 2 > num_time_periods:
@@ -97,8 +104,8 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t + 2].fs.dfc.power <= des_mdl.dfc_design.capacity + (DFC_OFFLOAD - 1) 
-            * des_mdl.dfc_design.capacity_ub * pb.period[t].fs.dfc.startup
+            pb.period[t + 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity  <= (1 - DFC_OFFLOAD )*
+            des_mdl.dfc_design.capacity_ub * (1-pb.period[t].fs.dfc.startup)
         )
     
     @m.Constraint(set_period)
@@ -109,9 +116,8 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t + 2].fs.dfc.power <= (des_mdl.dfc_design.capacity * DFC_OFFLOAD 
-            - des_mdl.dfc_design.capacity_lb + des_mdl.dfc_design.capacity_lb * 
-            pb.period[t].fs.dfc.startup)/(DFC_OFFLOAD -1)
+            pb.period[t + 2].fs.dfc.power <= des_mdl.dfc_design.capacity - des_mdl.dfc_design.capacity_lb
+            * pb.period[t].fs.dfc.startup * ( DFC_OFFLOAD -1)
         )
 
     # Fuel requirement during the first hour of the startup
@@ -187,8 +193,8 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t - 2].fs.dfc.power <= des_mdl.dfc_design.capacity + (DFC_OFFLOAD - 1) 
-            * des_mdl.dfc_design.capacity_ub * pb.period[t].fs.dfc.shutdown
+            pb.period[t - 2].fs.dfc.power - DFC_OFFLOAD * des_mdl.dfc_design.capacity <= (1 - DFC_OFFLOAD)
+            * des_mdl.dfc_design.capacity_ub * (1 - pb.period[t].fs.dfc.shutdown)
         )
     @m.Constraint(set_period)
     def shutdown_con_4_1(blk, t):
@@ -198,9 +204,8 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t - 2].fs.dfc.power <= (des_mdl.dfc_design.capacity * DFC_OFFLOAD 
-            - des_mdl.dfc_design.capacity_lb + des_mdl.dfc_design.capacity_lb * 
-            pb.period[t].fs.dfc.shutdown)/(DFC_OFFLOAD -1)
+            pb.period[t - 2].fs.dfc.power <= des_mdl.dfc_design.capacity - des_mdl.dfc_design.capacity_lb *
+            pb.period[t].fs.dfc.shutdown * (DFC_OFFLOAD - 1)
         )
 
     # Ensure that the power output is P_min at t - 1

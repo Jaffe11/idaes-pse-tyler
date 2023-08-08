@@ -1,5 +1,6 @@
 from pyomo.environ import (
     Var,
+    RangeSet,
     NonNegativeReals,
     Constraint,
     Expression,
@@ -18,6 +19,7 @@ def build_dfc_flowsheet(
     m,
     dfc_design,
     asu_design,
+    number_asu = None,
 ):
     """
     Build a flowsheet with DFC and ASU units only. ASU provides all the oxygen required
@@ -25,10 +27,15 @@ def build_dfc_flowsheet(
     """
 
     m.fs = FlowsheetBlock(dynamic=False)
-
+    
     # Append unit models
     m.fs.dfc = DFCOperation(design_blk=dfc_design)
     m.fs.asu = MonoASUOperation(design_blk=asu_design)
+
+    # m.fs.asu = MonoASUOperation(number_asu,initialize ={1: {"design_blk":asu_design[1]},
+    #                                          2: {"design_blk":asu_design[2]},
+    #                                          3: {"design_blk":asu_design[3]},
+    #                                          4: {"design_blk":asu_design[4]}})
 
     # Declare new variables
     m.fs.power_dfc_to_grid = Var(within=NonNegativeReals)
@@ -97,6 +104,7 @@ def build_dfc_flowsheet_with_lox(
     )
 
     # Power balance across the ASU
+    # non-linear
     m.fs.asu_power_balance = Constraint(
         expr=2 * m.fs.asu.total_power - m.fs.gox_fraction * m.fs.asu.total_power == 
         m.fs.power_dfc_to_asu + m.fs.power_grid_to_asu,
@@ -113,12 +121,14 @@ def build_dfc_flowsheet_with_lox(
     )
 
     # Gasoues oxygen balance across the ASU
+    # non-linear
     m.fs.gox_balance = Constraint(
         expr=m.fs.asu.o2_flow * m.fs.gox_fraction == m.fs.oxygen_asu_to_dfc +
         m.fs.oxygen_asu_to_vent,
     )
 
     # Liquid oxygen balance across the ASU
+    # non-linear
     m.fs.lox_balance = Constraint(
         expr=m.fs.asu.o2_flow - m.fs.asu.o2_flow * m.fs.gox_fraction ==
         m.fs.tank.lox_in,
