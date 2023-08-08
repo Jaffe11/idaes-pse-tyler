@@ -222,7 +222,7 @@ class DFCOperationData(SkeletonUnitModelData):
         _co2_emission = params["co2_emission"]
 
         self.power_production = Constraint(
-            expr=self.power == (_perf_curve[0] / (_ng_flow / _dfc_capacity)) * self.ng_flow - 
+            expr=self.power == (_perf_curve[0] / (_ng_flow / _dfc_capacity)) * self.ng_flow + 
             _perf_curve[1] * self.op_mode_capacity,
         )
 

@@ -4,7 +4,8 @@ import json
 
 from pyomo.environ import (
     ConcreteModel, 
-    Var, 
+    Var,
+    RangeSet,
     NonNegativeReals,
     Constraint,
     Expression,
@@ -142,7 +143,7 @@ def _write_results(
         "Lower bound": lower_bnd,
         "Upper bound": upper_bnd,
         "Gap": ((upper_bnd - lower_bnd) / lower_bnd) * 100,
-        "Wall time": sol["Solver"][0]["Wall time"],
+        #"Wall time": sol["Solver"][0]["Wall time"], gurobi specific callout
         "Status": sol["Solver"][0]["Status"],
         "Termination message": sol["Solver"][0]["Termination message"],
 
@@ -189,6 +190,7 @@ def npv_model_dfc_asu(
     dataset="NREL",
     location="PJM-W",
     carbon_tax=150,
+    number_asu = 4,
     dfc_params=dmp.DFC_PARAMS,
     asu_params=dmp.ASU_PARAMS,
     cost_params=dmp.CASHFLOW_PARAMS,
@@ -204,9 +206,11 @@ def npv_model_dfc_asu(
 
     m = ConcreteModel()
     get_lmp_data(m, dataset=dataset, location=location, carbon_tax=carbon_tax)
-
+    # Number of asu units
+    m.number_asu = RangeSet(number_asu)
     m.dfc_design = DFCDesign(model_params=dfc_params)
     m.asu_design = MonoASUDesign(model_params=asu_params)
+    #m.asu_design = MonoASUDesign(m.number_asu, model_params=asu_params)
 
     # Currently, we are not varying the capacity of the power cycle, so fixing the value
     # of capacity. Also, we want the power cycle to be built, so fixing build_dfc. 
@@ -221,6 +225,7 @@ def npv_model_dfc_asu(
         flowsheet_options={
             "dfc_design": m.dfc_design,
             "asu_design": m.asu_design,
+            #"number_asu": m.number_asu
         },
     )
 
@@ -333,7 +338,7 @@ def npv_model_dfc_asu_with_lox(
     elif tank_params["tank_constraint"] == "periodic":
         m.mp_model.periodic_constraint = Constraint(
             expr=m.mp_model.period[1].fs.tank.initial_holdup == 
-            m.mp_model.period[8760].fs.tank.holdup
+            m.mp_model.period[8760].fs.tank.final_holdup
         )
 
     # Append the overall cashflows
@@ -344,13 +349,13 @@ def npv_model_dfc_asu_with_lox(
 
     # Use Gurobi solver
     if solver is None:
-        solver = SolverFactory("gurobi")
-        solver.options['NonConvex'] = 2
-        solver.options['MIPGap'] = 0.01
-        solver.options['TimeLimit'] = 7500
-        solver.options['OutputFlag'] = 1
+        solver = SolverFactory("gams")
+        # solver.options['NonConvex'] = 2
+        # solver.options['MIPGap'] = 0.01
+        # solver.options['TimeLimit'] = 7500
+        # solver.options['OutputFlag'] = 1
 
-    sol = solver.solve(m, tee=True)
+    sol = solver.solve(m,solver = "cplex", tee=True)
 
     _filename = folder + dataset + "_" + location + "_" + str(carbon_tax)
     _write_results(m, sol, filename=_filename, lox_withdrawal=True)
@@ -436,7 +441,7 @@ def npv_model_dfc_asu_nlu(
     elif tank_params["tank_constraint"] == "periodic":
         m.mp_model.periodic_constraint = Constraint(
             expr=m.mp_model.period[1].fs.tank.initial_holdup == 
-            m.mp_model.period[8760].fs.tank.holdup
+            m.mp_model.period[8760].fs.tank.final_holdup
         )
 
     # Append the overall cashflows
