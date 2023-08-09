@@ -116,8 +116,7 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t + 2].fs.dfc.power <= des_mdl.dfc_design.capacity - des_mdl.dfc_design.capacity_lb
-            * pb.period[t].fs.dfc.startup * ( DFC_OFFLOAD -1)
+            pb.period[t + 2].fs.dfc.power <= des_mdl.dfc_design.capacity 
         )
 
     # Fuel requirement during the first hour of the startup
@@ -204,8 +203,7 @@ def dfc_startup_shutdown_constraints(m):
         des_mdl = pb.parent_block()
 
         return (
-            pb.period[t - 2].fs.dfc.power <= des_mdl.dfc_design.capacity - des_mdl.dfc_design.capacity_lb *
-            pb.period[t].fs.dfc.shutdown * (DFC_OFFLOAD - 1)
+            pb.period[t - 2].fs.dfc.power <= des_mdl.dfc_design.capacity 
         )
 
     # Ensure that the power output is P_min at t - 1
